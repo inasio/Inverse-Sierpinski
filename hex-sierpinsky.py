@@ -12,14 +12,21 @@ def plot_triangle(x,y):
     pb.plot(x,y,'k',linewidth=side)
     pb.plot(x[2::-2],y[2::-2],'k',linewidth=side)
 
-def plot_triangle_inverse(x,y,params):
+def compute_triangle_inverse(triangles, params):
+    i1,i2,i3 = triangles.shape
+    tr_inverse = np.zeros([i1,i2,i3])
     a,b = params
-    norms = (abs(x)**a + abs(y)**a)**b
-    x = x/norms
-    y = y/norms
-    x0 = np.concatenate([x, [x[0]]])
-    y0 = np.concatenate([y, [y[0]]])
-    pb.plot(y0,x0,'k',linewidth=0.4)
+    for i in xrange(i3):
+        tr_inverse[:,:,i] = triangles[:,:,i]/(abs(triangles[0,:,i])**a + abs(triangles[1,:,i])**a)**b
+    return tr_inverse
+
+
+#    norms = (abs(x)**a + abs(y)**a)**b
+#    x = x/norms
+#    y = y/norms
+#    x0 = np.concatenate([x, [x[0]]])
+#    y0 = np.concatenate([y, [y[0]]])
+#    pb.plot(y0,x0,'k',linewidth=0.4)
 
 def midpoint(x1, x2):
 	return [(x1[0] + x1[1])/2., (x2[0] + x2[1])/2.]
@@ -66,36 +73,35 @@ if __name__=="__main__":
     # The figure is shifted in y by h in order to center the figure 
     # in an empty space and avoid div by 0, looks better.
         h=np.sin(np.pi/3)*.5*1.5
-        #x = [0, np.cos(2*np.pi*i/6), np.cos(2*np.pi*(i+1)/6)]
-        #y = [h, h+np.sin(2*np.pi*i/6), h+np.sin(2*np.pi*(i+1)/6)]
         triangles[0,:3,i] = 0, np.cos(2*np.pi*i/6), np.cos(2*np.pi*(i+1)/6)
         triangles[1,:3,i] = h, h+np.sin(2*np.pi*i/6), h+np.sin(2*np.pi*(i+1)/6)
         triangles[0,3,i] = triangles[0,0,i]
         triangles[1,3,i] = triangles[1,0,i]
 
-    plt.plot(triangles[0,:,:], triangles[1,:,:])
-    tr2 = reproduce_triangles(triangles)
-    plt.plot(tr2[0,:,:], tr2[1,:,:])
+    generations = 8
+    for i in range(generations):
+        triangles = reproduce_triangles(triangles)
+
+    ### Uncomment to view the original Sierpinski figure
+    #plt.figure('siers normal')
+    #plt.plot(triangles[0,:,:], triangles[1,:,:])
+    
+    params = [0.45, 0.65]
+    t3 = time()
+    tr_inverse = compute_triangle_inverse(triangles, params)
+    t4 = time()
+    print 't4 ', t4-t3
+    plt.figure('siers inverse')
+    plt.plot(tr_inverse[0,:,:], tr_inverse[1,:,:], 'k', linewidth=0.3)
+    plt.text(0,0,str(params[0])+', '+str(params[1]), color='blue')
+    ax = plt.gca()
+    ax.autoscale(tight=True)
 
     plt.show()
+
     caca
     # key parameter: how many generations of triangles in the fractal
-    generation = 1
-    params = [0.45, 0.65]
-    #params = [1.25, 1.95]
-    for i in xrange(generation):
-        counter = 0
-        num_triangles = 6*3**(i+1)
-        new_triangles = np.zeros([2,4,num_triangles])
-        #for tr in triangles:
-        for j in xrange(num_triangles):
-        #    tr = 
-            temp_triangles = reproduce_triangle(tr)
-            for temp_tr in temp_triangles:
-                new_triangles.append(temp_tr)
-                counter += 1
-        print i*1./generation
-        triangles = new_triangles
+
 
     #Uncomment for uninverted Sierpinski fractal
     #plt.figure('siers normal')
@@ -108,11 +114,6 @@ if __name__=="__main__":
     t3 = time()
     plt.figure('sierps')
     plt.clf()
-     
-    # Uncomment for profiling details 
-    #with PyCallGraph(output=GraphvizOutput()):
-    #    for t in triangles:
-    #        plot_triangle_inverse(t[0], t[1], params)
 
     for t in triangles:
         plot_triangle_inverse(t[0], t[1], params)
